@@ -6,7 +6,7 @@ Migrate events, categories and venues from other Joomla event components into [J
 
 ## What it will do
 
-- Migrate from **JEvents**, **DPCalendar / DPCalendar Lite** and **iCagenda**, with more components to follow.
+- Migrate from other events manager (**JEvents**, **DPCalendar / DPCalendar Lite** and **iCagenda**).
 - Show a **preview** before anything is saved.
 - Import in **batches**, so large calendars work on any hosting.
 - Let you **import again** later (only new dates are added) and **undo** an import.
