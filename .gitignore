@@ -43,8 +43,10 @@ desktop.ini
 ## JEM Migrator
 #################
 
-# Build artifacts are attached to releases, not committed.
-/dist/
+# Keep only the current installable packages in Git; update this allowlist for each release.
+/dist/*
+!/dist/pkg_jemmigrator_v0.1.3.zip
+!/dist/plg_jem_import_v0.1.3.zip
 
 # Local documentation, review notes, drafts and the original patch.
 /docs/
