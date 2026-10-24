@@ -1,0 +1,54 @@
+#################
+## Editors and IDEs
+#################
+
+.project
+.settings/
+.buildpath
+.idea/
+.vscode/
+*.code-workspace
+*.swp
+*.bak
+*.tmp
+*~
+
+#################
+## AI and agent tools
+#################
+
+.claude/
+.codex/
+.cursor/
+.agents/
+
+#################
+## PHP tools
+#################
+
+vendor/
+.phpunit.cache/
+
+#################
+## Operating systems
+#################
+
+Thumbs.db
+thumbs.db
+Desktop.ini
+desktop.ini
+.DS_Store
+
+#################
+## JEM Migrator
+#################
+
+# Build artifacts are attached to releases, not committed.
+/dist/
+
+# Local documentation, review notes, drafts and the original patch.
+/docs/
+/notes/
+
+# Temporary build files.
+/tmp/

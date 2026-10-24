@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<extension type="component" method="upgrade">
+    <name>com_jemmigrator</name>
+    <author>JEM Community</author>
+    <creationDate>October 2026</creationDate>
+    <copyright>(C) 2026 joomlaeventmanager.net</copyright>
+    <license>https://www.gnu.org/licenses/gpl-3.0 GNU/GPL</license>
+    <authorEmail>info@joomlaeventmanager.net</authorEmail>
+    <authorUrl>https://www.joomlaeventmanager.net</authorUrl>
+    <version>0.1.3</version>
+    <description>COM_JEMMIGRATOR_XML_DESCRIPTION</description>
+    <namespace path="src">JemProject\Component\JemMigrator</namespace>
+
+    <media destination="com_jemmigrator" folder="media">
+        <folder>css</folder>
+        <folder>js</folder>
+    </media>
+
+    <administration>
+        <menu img="class:calendar">COM_JEMMIGRATOR</menu>
+        <files folder="administrator">
+            <filename>access.xml</filename>
+            <filename>config.xml</filename>
+            <folder>services</folder>
+            <folder>src</folder>
+            <folder>tmpl</folder>
+        </files>
+        <languages folder="administrator/language">
+            <language tag="en-GB">en-GB/com_jemmigrator.ini</language>
+            <language tag="en-GB">en-GB/com_jemmigrator.sys.ini</language>
+        </languages>
+    </administration>
+</extension>

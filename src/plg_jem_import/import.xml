@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<extension type="plugin" group="jem" method="upgrade">
+    <name>plg_jem_import</name>
+    <author>JEM Community</author>
+    <creationDate>October 2026</creationDate>
+    <copyright>(C) 2013-2026 joomlaeventmanager.net</copyright>
+    <license>https://www.gnu.org/licenses/gpl-3.0 GNU/GPL</license>
+    <authorEmail>info@joomlaeventmanager.net</authorEmail>
+    <authorUrl>https://www.joomlaeventmanager.net</authorUrl>
+    <version>0.1.3</version>
+    <description>PLG_JEM_IMPORT_XML_DESCRIPTION</description>
+    <namespace path="src">Joomla\Plugin\Jem\Import</namespace>
+    <scriptfile>script.php</scriptfile>
+
+    <files>
+        <folder plugin="import">services</folder>
+        <filename>script.php</filename>
+        <folder>src</folder>
+        <folder>sql</folder>
+    </files>
+
+    <install>
+        <sql>
+            <file driver="mysql" charset="utf8">sql/install.mysql.utf8.sql</file>
+        </sql>
+    </install>
+
+    <languages folder="language">
+        <language tag="en-GB">en-GB/plg_jem_import.ini</language>
+        <language tag="en-GB">en-GB/plg_jem_import.sys.ini</language>
+    </languages>
+</extension>

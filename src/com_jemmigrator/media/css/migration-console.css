@@ -1,0 +1,45 @@
+.jem-console {
+    border: 1px solid var(--bs-border-color, #ced4da);
+    border-radius: .375rem;
+    max-height: 30rem;
+    overflow: auto;
+}
+
+.jem-console__line {
+    display: flex;
+    gap: .75rem;
+    padding: .45rem .75rem;
+    border-bottom: 1px solid var(--bs-border-color, #ced4da);
+    overflow-wrap: anywhere;
+}
+
+.jem-console__line:last-child {
+    border-bottom: 0;
+}
+
+.jem-console__meta {
+    flex: 0 0 9rem;
+    font-size: .85em;
+}
+
+.jem-console-info {
+    background: var(--bs-info-bg-subtle, #cff4fc);
+    color: var(--bs-info-text-emphasis, #055160);
+}
+
+.jem-console-warning {
+    background: var(--bs-warning-bg-subtle, #fff3cd);
+    color: var(--bs-warning-text-emphasis, #664d03);
+}
+
+.jem-console-error {
+    background: var(--bs-danger-bg-subtle, #f8d7da);
+    color: var(--bs-danger-text-emphasis, #842029);
+}
+
+@media (max-width: 767px) {
+    .jem-console__line {
+        flex-direction: column;
+        gap: .15rem;
+    }
+}

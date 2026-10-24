@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<extension type="plugin" group="jemmigrator" method="upgrade">
+    <name>plg_jemmigrator_icagenda</name>
+    <author>JEM Community</author>
+    <creationDate>October 2026</creationDate>
+    <copyright>(C) 2026 joomlaeventmanager.net</copyright>
+    <license>https://www.gnu.org/licenses/gpl-3.0 GNU/GPL</license>
+    <authorEmail>info@joomlaeventmanager.net</authorEmail>
+    <authorUrl>https://www.joomlaeventmanager.net</authorUrl>
+    <version>0.1.3</version>
+    <description>PLG_JEMMIGRATOR_ICAGENDA_XML_DESCRIPTION</description>
+    <namespace path="src">JemProject\Plugin\JemMigrator\Icagenda</namespace>
+
+    <files>
+        <folder plugin="icagenda">services</folder>
+        <folder>src</folder>
+    </files>
+
+    <languages folder="language">
+        <language tag="en-GB">en-GB/plg_jemmigrator_icagenda.ini</language>
+        <language tag="en-GB">en-GB/plg_jemmigrator_icagenda.sys.ini</language>
+    </languages>
+</extension>
