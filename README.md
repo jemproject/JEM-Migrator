@@ -16,10 +16,6 @@ Migrate events, categories and venues from other Joomla event components into [J
 
 JEM Migrator is a separate extension, so one-time migration code does not have to be part of JEM. It reads the source component and sends the data to the **JEM import plugin**, which is part of JEM and is the only part that saves data in JEM, using JEM's own checks and permissions.
 
-## Background
-
-The proposal and the first migration adapters come from [JEM issue #2371](https://github.com/jemproject/JEM-Project/issues/2371), based on the work of [@JKoelman](https://github.com/JKoelman).
-
 ## License
 
 GNU General Public License version 3 or later.
