@@ -82,12 +82,11 @@ class MigrateController extends BaseController
             $adapter->getLabel(), $c['events'], $c['series'], $c['categories_new'], $c['venues_new'],
             $c['skipped_existing'], $c['skipped_past'] + $c['skipped_source'], $c['errors']
         ));
-        $this->redirectTo(
-            'runs',
-            Text::sprintf('COM_JEMMIGRATOR_PREVIEW_READY', $adapter->getLabel(), $c['events'], $c['errors']),
-            $c['errors'] ? 'warning' : 'message',
-            $source
-        );
+        $noChanges = $c['errors'] === 0 && $c['events'] === 0 && $c['categories_new'] === 0;
+        $message = $noChanges
+            ? Text::sprintf('COM_JEMMIGRATOR_PREVIEW_NO_CHANGES', $adapter->getLabel(), $c['skipped_existing'])
+            : Text::sprintf('COM_JEMMIGRATOR_PREVIEW_READY', $adapter->getLabel(), $c['events'], $c['categories_new'], $c['errors']);
+        $this->redirectTo('runs', $message, $c['errors'] ? 'warning' : ($noChanges ? 'notice' : 'message'), $source);
     }
 
     public function start(): void

@@ -15,24 +15,24 @@ use Joomla\CMS\Router\Route;
 /** @var bool $runsActive True on the import-run page. */
 ?>
 <ul class="nav nav-tabs mb-3" aria-label="<?php echo Text::_('COM_JEMMIGRATOR_SOURCES'); ?>">
-    <?php foreach ($tabs as $key => $tab) : ?>
+    <?php foreach ($tabs as $navKey => $navTab) : ?>
         <li class="nav-item">
-            <?php if ($tab['available']) : ?>
-                <a class="nav-link <?php echo !$runsActive && $activeSource === $key ? 'active' : ''; ?>"
-                    <?php echo !$runsActive && $activeSource === $key ? 'aria-current="page"' : ''; ?>
-                    href="<?php echo Route::_('index.php?option=com_jemmigrator&view=source&source=' . rawurlencode($key)); ?>">
-                    <?php echo htmlspecialchars($tab['label'], ENT_QUOTES, 'UTF-8'); ?>
+            <?php if ($navTab['available']) : ?>
+                <a class="nav-link <?php echo !$runsActive && $activeSource === $navKey ? 'active' : ''; ?>"
+                    <?php echo !$runsActive && $activeSource === $navKey ? 'aria-current="page"' : ''; ?>
+                    href="<?php echo Route::_('index.php?option=com_jemmigrator&view=source&source=' . rawurlencode($navKey)); ?>">
+                    <?php echo htmlspecialchars($navTab['label'], ENT_QUOTES, 'UTF-8'); ?>
                 </a>
-            <?php elseif ($tab['detected']) : ?>
-                <a class="nav-link text-body-secondary" href="<?php echo Route::_('index.php?option=com_jemmigrator&view=runs&source=' . rawurlencode($key)); ?>"
+            <?php elseif ($navTab['detected']) : ?>
+                <a class="nav-link text-body-secondary" href="<?php echo Route::_('index.php?option=com_jemmigrator&view=runs&source=' . rawurlencode($navKey)); ?>"
                     title="<?php echo Text::_('COM_JEMMIGRATOR_SOURCE_READ_ONLY'); ?>">
-                    <?php echo htmlspecialchars($tab['label'], ENT_QUOTES, 'UTF-8'); ?>
+                    <?php echo htmlspecialchars($navTab['label'], ENT_QUOTES, 'UTF-8'); ?>
                     <small>(<?php echo Text::_('COM_JEMMIGRATOR_READ_ONLY'); ?>)</small>
                 </a>
             <?php else : ?>
                 <span class="nav-link disabled text-body-secondary" aria-disabled="true"
                     title="<?php echo Text::_('COM_JEMMIGRATOR_SOURCE_UNAVAILABLE'); ?>">
-                    <?php echo htmlspecialchars($tab['label'], ENT_QUOTES, 'UTF-8'); ?>
+                    <?php echo htmlspecialchars($navTab['label'], ENT_QUOTES, 'UTF-8'); ?>
                 </span>
             <?php endif; ?>
         </li>

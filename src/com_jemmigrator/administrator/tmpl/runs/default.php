@@ -25,9 +25,10 @@ $categoryModes = [
     'single' => 'COM_JEMMIGRATOR_CATEGORY_SINGLE',
 ];
 $pluginReady = $this->importInfo !== null && !empty($this->importInfo['compatible']) && !empty($this->importInfo['ready']);
-$preflightReady = $tab && $tab['available'] && $this->sourceError === '' && $this->jem['installed'] && $pluginReady
-    && $preview && ((int) ($counts['events'] ?? 0) > 0 || (int) ($counts['categories_new'] ?? 0) > 0)
-    && (int) ($counts['errors'] ?? 0) === 0;
+$checksReady = $tab && $tab['available'] && $this->sourceError === '' && $this->jem['installed'] && $pluginReady;
+$hasChanges = (int) ($counts['events'] ?? 0) > 0 || (int) ($counts['categories_new'] ?? 0) > 0;
+$noChanges = $checksReady && $preview && !$hasChanges && (int) ($counts['errors'] ?? 0) === 0;
+$preflightReady = $checksReady && $preview && $hasChanges && (int) ($counts['errors'] ?? 0) === 0;
 ?>
 <?php
 $tabs = $this->tabs;
@@ -36,7 +37,7 @@ $runsActive = true;
 require dirname(__DIR__) . '/navigation.php';
 ?>
 
-<h2 class="h4"><?php echo Text::_('COM_JEMMIGRATOR_PREFLIGHT_TITLE'); ?></h2>
+<h2 class="h4"><?php echo Text::_('COM_JEMMIGRATOR_PREFLIGHT_TITLE'); ?><?php echo $tab ? ': ' . $this->escape($tab['label']) : ''; ?></h2>
 <p><?php echo Text::_('COM_JEMMIGRATOR_PREFLIGHT_DESC'); ?></p>
 <div class="card mb-4">
     <div class="card-body">
@@ -120,8 +121,10 @@ require dirname(__DIR__) . '/navigation.php';
                 (int) ($counts['skipped_source'] ?? 0), (int) ($counts['warnings'] ?? 0),
                 (int) ($counts['errors'] ?? 0)
             ); ?></p>
-            <div class="alert <?php echo $preflightReady ? 'alert-success' : 'alert-danger'; ?>">
-                <?php echo Text::_($preflightReady ? 'COM_JEMMIGRATOR_PREFLIGHT_PASSED' : 'COM_JEMMIGRATOR_PREFLIGHT_FAILED'); ?>
+            <div class="alert <?php echo $preflightReady ? 'alert-success' : ($noChanges ? 'alert-info' : 'alert-danger'); ?>">
+                <?php echo $noChanges
+                    ? Text::sprintf('COM_JEMMIGRATOR_PREFLIGHT_NO_CHANGES', (int) ($counts['skipped_existing'] ?? 0))
+                    : Text::_($preflightReady ? 'COM_JEMMIGRATOR_PREFLIGHT_PASSED' : 'COM_JEMMIGRATOR_PREFLIGHT_FAILED'); ?>
             </div>
             <p class="text-warning-emphasis small mb-0"><?php echo Text::_('COM_JEMMIGRATOR_ACL_SCOPE_NOTICE'); ?></p>
         <?php else : ?>
