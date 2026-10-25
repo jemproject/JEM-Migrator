@@ -26,6 +26,16 @@ use Joomla\CMS\Language\Text;
  */
 final class IcagendaAdapter extends AbstractAdapter
 {
+    public function getMediaCapabilities(): array
+    {
+        return [
+            'event_images' => true,
+            'category_images' => true,
+            'venue_images' => false,
+            'event_attachments' => false,
+        ];
+    }
+
     public function getSource(): string
     {
         return 'icagenda';
@@ -48,7 +58,14 @@ final class IcagendaAdapter extends AbstractAdapter
 
     public function isAvailable(): bool
     {
-        return $this->tableExists('icagenda_events') && $this->tableExists('icagenda_category');
+        return $this->tableHasColumns('icagenda_events', [
+            'id', 'state', 'approval', 'dates', 'period', 'startdate', 'enddate',
+            'weekdays', 'displaytime', 'title', 'catid', 'created', 'created_by',
+            'access', 'place', 'address', 'city', 'country', 'lat', 'lng',
+            'desc', 'shortdesc', 'website',
+        ]) && $this->tableHasColumns('icagenda_category', [
+            'id', 'state', 'ordering', 'title', 'alias', 'desc', 'color',
+        ]);
     }
 
     public function getSummary(): array

@@ -444,7 +444,7 @@ final class ImportService
             }
 
             $eventImages = [];
-            if ($error === null && $options['copy_images']) {
+            if ($error === null && $options['copy_event_images']) {
                 $eventImages[\JemImageProfilePolicy::EVENT_INTRO] = $this->planImage(
                     $e['image_intro'], \JemImageProfilePolicy::EVENT_INTRO, $row['notes']
                 );
@@ -503,7 +503,7 @@ final class ImportService
             $venue = null;
             $venueImage = '';
             if ($e['venue'] !== null && $options['create_venues']) {
-                if ($options['copy_images']) {
+                if ($options['copy_venue_images']) {
                     $venueImage = $this->planImage(
                         $e['venue']['image'], \JemImageProfilePolicy::VENUE, $row['notes']
                     );
@@ -513,10 +513,10 @@ final class ImportService
             }
 
             if ($venue !== null) {
-                $key = mb_strtolower($venue['venue']);
+                $key = VenueIdentity::key($venue);
 
                 if (!isset($result['venues'][$key])) {
-                    $id = $this->findVenueId($venue['venue']);
+                    $id = $this->findVenueId($venue);
                     $created = false;
 
                     if (!$id && $write) {
@@ -587,7 +587,7 @@ final class ImportService
             }
 
             $imageNotes = [];
-            $categoryImage = $options['copy_images']
+            $categoryImage = $options['copy_category_images']
                 ? $this->planImage($c['image'], \JemImageProfilePolicy::CATEGORY, $imageNotes)
                 : '';
 
@@ -761,6 +761,10 @@ final class ImportService
      */
     private function mapVenue(array $v, bool $imagePlanned = false): array
     {
+        if (!$this->viewLevelExists((int) $v['access'])) {
+            throw new \RuntimeException(Text::sprintf('PLG_JEM_IMPORT_ERROR_ACCESS', (int) $v['access']));
+        }
+
         $notes = [];
         $country = $this->countryCode($v['country']);
 
@@ -778,6 +782,7 @@ final class ImportService
             'latitude'   => $v['latitude'],
             'longitude'  => $v['longitude'],
             'url'        => $v['url'],
+            'access'     => $v['access'],
         ];
 
         try {
@@ -1445,19 +1450,23 @@ final class ImportService
         )->loadResult();
     }
 
-    private function findVenueId(string $name): int
+    private function findVenueId(array $venue): int
     {
         $db = $this->db;
 
-        return (int) $db->setQuery(
+        $candidates = $db->setQuery(
             $db->getQuery(true)
-                ->select($db->quoteName('id'))
+                ->select($db->quoteName(['id', 'venue', 'street', 'postalCode', 'city', 'state', 'country', 'access']))
                 ->from($db->quoteName('#__jem_venues'))
-                ->where('LOWER(' . $db->quoteName('venue') . ') = ' . $db->quote(mb_strtolower($name)))
-                ->order($db->quoteName('id')),
-            0,
-            1
-        )->loadResult();
+                ->where('LOWER(' . $db->quoteName('venue') . ') = ' . $db->quote(mb_strtolower($venue['venue'])))
+                ->order($db->quoteName('id'))
+        )->loadAssocList();
+
+        try {
+            return VenueIdentity::resolve($venue, $candidates);
+        } catch (\RuntimeException $e) {
+            throw new \RuntimeException($venue['venue'] . ': ' . $e->getMessage(), 0, $e);
+        }
     }
 
     private function nextSeriesOrder(int $seriesId): int

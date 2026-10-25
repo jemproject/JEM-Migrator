@@ -12,6 +12,7 @@
 .jem-category-map__controls {
     display: flex;
     align-items: center;
+    justify-content: flex-end;
     gap: .75rem;
     margin-bottom: .75rem;
 }

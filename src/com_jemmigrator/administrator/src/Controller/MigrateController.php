@@ -48,6 +48,18 @@ class MigrateController extends BaseController
         try {
             $options = $this->getOptions($source);
 
+            if (!$options['migrate_events'] && !$options['migrate_categories']) {
+                throw new \RuntimeException(Text::_('COM_JEMMIGRATOR_ERROR_EMPTY_SCOPE'));
+            }
+
+            if (!$options['migrate_categories'] && $options['category_mode'] !== 'single') {
+                throw new \RuntimeException(Text::_('COM_JEMMIGRATOR_ERROR_CATEGORY_SCOPE'));
+            }
+
+            if (!$options['migrate_events'] && $options['category_mode'] === 'single') {
+                throw new \RuntimeException(Text::_('COM_JEMMIGRATOR_ERROR_CATEGORY_ONLY_MODE'));
+            }
+
             if ($options['category_mode'] === 'single' && $options['single_catid'] <= 1) {
                 throw new \RuntimeException(Text::_('COM_JEMMIGRATOR_ERROR_SELECT_CATEGORY'));
             }
@@ -105,7 +117,8 @@ class MigrateController extends BaseController
 
             if (PayloadBuilder::fingerprint($payload) !== (string) ($preview['fingerprint'] ?? '')
                 || $checked['plan_fingerprint'] !== (string) ($preview['plan_fingerprint'] ?? '')
-                || (int) $checked['counts']['errors'] > 0 || (int) $checked['counts']['events'] < 1) {
+                || (int) $checked['counts']['errors'] > 0
+                || ((int) $checked['counts']['events'] < 1 && (int) $checked['counts']['categories_new'] < 1)) {
                 throw new \RuntimeException(Text::_('COM_JEMMIGRATOR_ERROR_PREFLIGHT'));
             }
         } catch (\Throwable $e) {
@@ -352,6 +365,7 @@ class MigrateController extends BaseController
     {
         $input = $this->input->post;
         $prefix = 'jm_' . $source . '_';
+        $media = SourceRegistry::get($source)?->getMediaCapabilities() ?? [];
         $mode = $input->getCmd($prefix . 'category_mode', 'tree');
         $mapJson = (string) $input->get($prefix . 'category_map_json', '{}', 'raw');
         $categoryMap = json_decode($mapJson, true);
@@ -365,8 +379,17 @@ class MigrateController extends BaseController
             'parent_catid'  => max(1, $input->getInt($prefix . 'parent_catid', 1)),
             'single_catid'  => $input->getInt($prefix . 'single_catid', 0),
             'category_map'  => $mode === 'manual' ? $categoryMap : [],
-            'create_venues' => $input->getInt($prefix . 'create_venues', 0) ? 1 : 0,
-            'copy_images'   => $input->getInt($prefix . 'copy_images', 0) ? 1 : 0,
+            'migrate_events' => $input->getInt($prefix . 'migrate_events', 0) ? 1 : 0,
+            'migrate_categories' => $input->getInt($prefix . 'migrate_categories', 0) ? 1 : 0,
+            'create_venues' => $input->getInt($prefix . 'migrate_events', 0)
+                && $input->getInt($prefix . 'create_venues', 0) ? 1 : 0,
+            'copy_event_images' => !empty($media['event_images']) && $input->getInt($prefix . 'migrate_events', 0)
+                && $input->getInt($prefix . 'copy_event_images', 0) ? 1 : 0,
+            'copy_category_images' => !empty($media['category_images']) && $input->getInt($prefix . 'migrate_categories', 0)
+                && $input->getInt($prefix . 'copy_category_images', 0) ? 1 : 0,
+            'copy_venue_images' => !empty($media['venue_images']) && $input->getInt($prefix . 'migrate_events', 0)
+                && $input->getInt($prefix . 'create_venues', 0)
+                && $input->getInt($prefix . 'copy_venue_images', 0) ? 1 : 0,
             'skip_past'     => $input->getInt($prefix . 'skip_past', 0) ? 1 : 0,
             'calendars'     => array_values(array_filter(array_map('intval', (array) $input->get($prefix . 'calendars', [], 'array')))),
         ];
@@ -380,7 +403,9 @@ class MigrateController extends BaseController
             'single_catid'  => (int) ($options['single_catid'] ?? 0),
             'category_map'  => (array) ($options['category_map'] ?? []),
             'create_venues' => (int) ($options['create_venues'] ?? 1),
-            'copy_images'   => (int) ($options['copy_images'] ?? 0),
+            'copy_event_images' => (int) ($options['copy_event_images'] ?? 0),
+            'copy_category_images' => (int) ($options['copy_category_images'] ?? 0),
+            'copy_venue_images' => (int) ($options['copy_venue_images'] ?? 0),
         ];
     }
 

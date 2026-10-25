@@ -28,6 +28,16 @@ use Joomla\CMS\Language\Text;
  */
 final class DpcalendarAdapter extends AbstractAdapter
 {
+    public function getMediaCapabilities(): array
+    {
+        return [
+            'event_images' => true,
+            'category_images' => true,
+            'venue_images' => true,
+            'event_attachments' => false,
+        ];
+    }
+
     public function getSource(): string
     {
         return 'dpcalendar';
@@ -51,7 +61,15 @@ final class DpcalendarAdapter extends AbstractAdapter
 
     public function isAvailable(): bool
     {
-        return $this->tableExists('dpcalendar_events');
+        return $this->tableHasColumns('dpcalendar_events', [
+            'id', 'uid', 'original_id', 'state', 'catid', 'title', 'description',
+            'start_date', 'end_date', 'all_day', 'show_end_time', 'access',
+            'created', 'created_by', 'url',
+        ]) && $this->optionalTableHasColumns('dpcalendar_events_location', ['event_id', 'location_id'])
+            && $this->optionalTableHasColumns('dpcalendar_locations', [
+                'id', 'title', 'street', 'number', 'zip', 'city', 'province',
+                'country', 'latitude', 'longitude', 'url',
+            ]) && $this->optionalTableHasColumns('dpcalendar_countries', ['id', 'short_code']);
     }
 
     public function getSummary(): array
@@ -112,6 +130,7 @@ final class DpcalendarAdapter extends AbstractAdapter
                     'longitude'  => $row->longitude !== null ? (float) $row->longitude : null,
                     'url'        => (string) $row->url,
                     'image'      => (string) ($row->image ?? ''),
+                    'access'     => (int) ($row->access ?? 1),
                 ];
             }
         }

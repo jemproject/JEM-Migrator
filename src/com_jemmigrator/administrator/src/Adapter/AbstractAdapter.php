@@ -78,6 +78,17 @@ abstract class AbstractAdapter
         return '';
     }
 
+    /** Media fields that this adapter can actually read from its source. */
+    public function getMediaCapabilities(): array
+    {
+        return [
+            'event_images' => false,
+            'category_images' => false,
+            'venue_images' => false,
+            'event_attachments' => false,
+        ];
+    }
+
     /** Installed version of the source component. */
     public function getVersion(): string
     {
@@ -89,6 +100,23 @@ abstract class AbstractAdapter
     protected function tableExists(string $table): bool
     {
         return \in_array($this->db->getPrefix() . $table, $this->db->getTableList(), true);
+    }
+
+    /** Check a source table's shape before running adapter queries. */
+    protected function tableHasColumns(string $table, array $required): bool
+    {
+        if (!$this->tableExists($table)) {
+            return false;
+        }
+
+        $columns = $this->db->getTableColumns($this->db->getPrefix() . $table);
+
+        return !array_diff($required, array_keys($columns));
+    }
+
+    protected function optionalTableHasColumns(string $table, array $required): bool
+    {
+        return !$this->tableExists($table) || $this->tableHasColumns($table, $required);
     }
 
     protected function getSiteTimezone(): \DateTimeZone

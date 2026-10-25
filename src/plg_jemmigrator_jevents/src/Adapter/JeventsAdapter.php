@@ -46,9 +46,24 @@ final class JeventsAdapter extends AbstractAdapter
         return Text::_('COM_JEMMIGRATOR_JEVENTS_DESC');
     }
 
+    public function getMediaCapabilities(): array
+    {
+        return [
+            'event_images' => false,
+            'category_images' => true,
+            'venue_images' => false,
+            'event_attachments' => false,
+        ];
+    }
+
     public function isAvailable(): bool
     {
-        return $this->tableExists('jevents_vevent') && $this->tableExists('jevents_vevdetail') && $this->tableExists('jevents_repetition');
+        return $this->tableHasColumns('jevents_vevent', ['ev_id', 'uid', 'catid', 'state', 'access', 'created', 'created_by', 'icsid'])
+            && $this->tableHasColumns('jevents_vevdetail', ['evdet_id', 'summary', 'description', 'location', 'geolat', 'geolon', 'url', 'dtstartraw', 'noendtime', 'contact'])
+            && $this->tableHasColumns('jevents_repetition', ['rp_id', 'eventid', 'eventdetail_id', 'startrepeat', 'endrepeat'])
+            && $this->optionalTableHasColumns('jevents_catmap', ['evid', 'catid', 'ordering'])
+            && $this->optionalTableHasColumns('jevents_icsfile', ['ics_id', 'label'])
+            && $this->optionalTableHasColumns('jev_locations', ['loc_id']);
     }
 
     public function getSummary(): array
@@ -116,12 +131,19 @@ final class JeventsAdapter extends AbstractAdapter
             $primaryCategory = (string) $row->catid;
 
             if ($mappedCategories && !\in_array($primaryCategory, $mappedCategories, true)) {
+                $sourceCategories = $this->loadCategories();
+                $categoryLabel = static function (string $id) use ($sourceCategories): string {
+                    $name = trim((string) ($sourceCategories[$id]['catname'] ?? ''));
+
+                    return $name === '' ? '#' . $id : $name . ' (#' . $id . ')';
+                };
+
                 throw new \RuntimeException(Text::sprintf(
                     'COM_JEMMIGRATOR_JEVENTS_CATEGORY_CONFLICT',
                     (int) $row->ev_id,
                     (string) $row->summary,
-                    $primaryCategory,
-                    implode(', ', $mappedCategories)
+                    $categoryLabel($primaryCategory),
+                    implode(', ', array_map($categoryLabel, $mappedCategories))
                 ));
             }
 

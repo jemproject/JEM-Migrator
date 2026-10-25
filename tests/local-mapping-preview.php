@@ -64,6 +64,7 @@ foreach ([
     '/plg_jem_import/src/Service/BatchNormaliser.php',
     '/plg_jem_import/src/Service/LocalImageSource.php',
     '/plg_jem_import/src/Service/ImageTransfer.php',
+    '/plg_jem_import/src/Service/VenueIdentity.php',
     '/plg_jem_import/src/Service/ImportService.php',
 ] as $file) {
     require_once $root . $file;

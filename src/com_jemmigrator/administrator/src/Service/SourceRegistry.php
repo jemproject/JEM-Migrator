@@ -92,9 +92,13 @@ final class SourceRegistry
 
         foreach ($labels as $key => $label) {
             $available = false;
+            $schemaCompatible = null;
 
             try {
-                $available = isset($registered[$key]) && $registered[$key]->isAvailable();
+                if (isset($registered[$key])) {
+                    $schemaCompatible = $registered[$key]->isAvailable();
+                    $available = $schemaCompatible;
+                }
             } catch (\Throwable $e) {
                 // A broken source adapter must not hide the other sources.
             }
@@ -107,6 +111,7 @@ final class SourceRegistry
             $tabs[$key] = [
                 'label' => $label,
                 'available' => $available && $detected && $pluginEnabled,
+                'schema_compatible' => $schemaCompatible,
                 'detected' => $detected,
                 'version' => (string) ($manifest['version'] ?? ''),
                 'plugin_installed' => $plugin !== null,

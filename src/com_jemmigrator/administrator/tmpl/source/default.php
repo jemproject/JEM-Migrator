@@ -75,7 +75,13 @@ require dirname(__DIR__) . '/navigation.php';
     $adapter = $source['adapter'];
     $summary = $source['summary'];
     $hasPreview = ($preview['source'] ?? '') === $key;
-    $opt = $hasPreview ? (array) $preview['options'] : ['category_mode' => 'tree', 'parent_catid' => 1, 'single_catid' => 0, 'category_map' => [], 'create_venues' => 1, 'copy_images' => 1, 'skip_past' => 0, 'calendars' => []];
+    $opt = ($hasPreview ? (array) $preview['options'] : []) + [
+        'category_mode' => 'tree', 'parent_catid' => 1, 'single_catid' => 0, 'category_map' => [],
+        'migrate_events' => 1, 'migrate_categories' => 1, 'create_venues' => 1,
+        'copy_event_images' => 1, 'copy_category_images' => 1, 'copy_venue_images' => 1,
+        'skip_past' => 0, 'calendars' => [],
+    ];
+    $media = $adapter->getMediaCapabilities();
     $p = 'jm_' . $key . '_';
     $sourceTree = [];
 
@@ -120,7 +126,27 @@ require dirname(__DIR__) . '/navigation.php';
                 <div class="alert alert-danger"><?php echo $this->escape($source['error']); ?></div>
             <?php endif; ?>
 
+            <p class="alert alert-warning small" role="note"><?php echo Text::_('COM_JEMMIGRATOR_ACL_SCOPE_NOTICE'); ?></p>
             <form action="<?php echo $action; ?>" method="post" class="mt-3">
+                <fieldset class="mb-3">
+                    <legend class="h6"><?php echo Text::_('COM_JEMMIGRATOR_MIGRATION_SCOPE'); ?></legend>
+                    <div class="form-check">
+                        <input type="hidden" name="<?php echo $p; ?>migrate_events" value="0">
+                        <input class="form-check-input" type="checkbox" name="<?php echo $p; ?>migrate_events" id="<?php echo $p; ?>migrate_events" value="1" <?php echo !empty($opt['migrate_events']) ? 'checked' : ''; ?>>
+                        <label class="form-check-label" for="<?php echo $p; ?>migrate_events"><?php echo Text::_('COM_JEMMIGRATOR_SCOPE_EVENTS'); ?></label>
+                    </div>
+                    <div class="form-check">
+                        <input type="hidden" name="<?php echo $p; ?>migrate_categories" value="0">
+                        <input class="form-check-input" type="checkbox" name="<?php echo $p; ?>migrate_categories" id="<?php echo $p; ?>migrate_categories" value="1" <?php echo !empty($opt['migrate_categories']) ? 'checked' : ''; ?>>
+                        <label class="form-check-label" for="<?php echo $p; ?>migrate_categories"><?php echo Text::_('COM_JEMMIGRATOR_SCOPE_CATEGORIES'); ?></label>
+                    </div>
+                    <div class="form-check">
+                        <input type="hidden" name="<?php echo $p; ?>create_venues" value="0">
+                        <input class="form-check-input" type="checkbox" name="<?php echo $p; ?>create_venues" id="<?php echo $p; ?>create_venues" value="1" <?php echo !empty($opt['create_venues']) ? 'checked' : ''; ?>>
+                        <label class="form-check-label" for="<?php echo $p; ?>create_venues"><?php echo Text::_('COM_JEMMIGRATOR_CREATE_VENUES'); ?></label>
+                        <div class="form-text"><?php echo Text::_('COM_JEMMIGRATOR_VENUES_FROM_EVENTS'); ?></div>
+                    </div>
+                </fieldset>
                 <?php if (!empty($summary['calendars'])) : ?>
                     <fieldset class="mb-3">
                         <legend class="h6"><?php echo Text::_('COM_JEMMIGRATOR_CALENDARS'); ?></legend>
@@ -151,30 +177,33 @@ require dirname(__DIR__) . '/navigation.php';
                 </fieldset>
 
                 <div class="row g-3 mb-3">
-                    <div class="col-md-6">
-                        <label class="form-label" for="<?php echo $p; ?>parent_catid"><?php echo Text::_('COM_JEMMIGRATOR_PARENT_CATEGORY'); ?></label>
-                        <select class="form-select" name="<?php echo $p; ?>parent_catid" id="<?php echo $p; ?>parent_catid">
-                            <option value="1"><?php echo Text::_('COM_JEMMIGRATOR_TOP_LEVEL'); ?></option>
-                            <?php foreach ($this->jemCategories as $category) : ?>
-                                <?php if ((int) $category->id === 1) { continue; } ?>
-                                <option value="<?php echo (int) $category->id; ?>" <?php echo (int) $opt['parent_catid'] === (int) $category->id ? 'selected' : ''; ?>>
-                                    <?php echo str_repeat('- ', max(0, (int) $category->level - 1)) . $this->escape($category->catname); ?>
-                                </option>
-                            <?php endforeach; ?>
-                        </select>
-                        <div class="form-text"><?php echo Text::_('COM_JEMMIGRATOR_PARENT_CATEGORY_DESC'); ?></div>
-                    </div>
-                    <div class="col-md-6">
-                        <label class="form-label" for="<?php echo $p; ?>single_catid"><?php echo Text::_('COM_JEMMIGRATOR_SINGLE_CATEGORY'); ?></label>
-                        <select class="form-select" name="<?php echo $p; ?>single_catid" id="<?php echo $p; ?>single_catid">
-                            <option value="0"><?php echo Text::_('JSELECT'); ?></option>
-                            <?php foreach ($this->jemCategories as $category) : ?>
-                                <?php if ((int) $category->id === 1) { continue; } ?>
-                                <option value="<?php echo (int) $category->id; ?>" <?php echo (int) $opt['single_catid'] === (int) $category->id ? 'selected' : ''; ?>>
-                                    <?php echo str_repeat('- ', max(0, (int) $category->level - 1)) . $this->escape($category->catname); ?>
-                                </option>
-                            <?php endforeach; ?>
-                        </select>
+                    <div class="col-12 col-lg-6 ms-lg-auto">
+                        <h3 class="h6"><?php echo Text::_('COM_JEMMIGRATOR_DESTINATION'); ?></h3>
+                        <div data-map-parent-setting <?php echo $opt['category_mode'] === 'single' ? 'hidden' : ''; ?>>
+                            <label class="form-label" for="<?php echo $p; ?>parent_catid"><?php echo Text::_('COM_JEMMIGRATOR_PARENT_CATEGORY'); ?></label>
+                            <select class="form-select" name="<?php echo $p; ?>parent_catid" id="<?php echo $p; ?>parent_catid">
+                                <option value="1"><?php echo Text::_('COM_JEMMIGRATOR_TOP_LEVEL'); ?></option>
+                                <?php foreach ($this->jemCategories as $category) : ?>
+                                    <?php if ((int) $category->id === 1) { continue; } ?>
+                                    <option value="<?php echo (int) $category->id; ?>" <?php echo (int) $opt['parent_catid'] === (int) $category->id ? 'selected' : ''; ?>>
+                                        <?php echo str_repeat('- ', max(0, (int) $category->level - 1)) . $this->escape($category->catname); ?>
+                                    </option>
+                                <?php endforeach; ?>
+                            </select>
+                            <div class="form-text"><?php echo Text::_('COM_JEMMIGRATOR_PARENT_CATEGORY_DESC'); ?></div>
+                        </div>
+                        <div data-map-single-setting <?php echo $opt['category_mode'] === 'single' ? '' : 'hidden'; ?>>
+                            <label class="form-label" for="<?php echo $p; ?>single_catid"><?php echo Text::_('COM_JEMMIGRATOR_SINGLE_CATEGORY'); ?></label>
+                            <select class="form-select" name="<?php echo $p; ?>single_catid" id="<?php echo $p; ?>single_catid">
+                                <option value="0"><?php echo Text::_('JSELECT'); ?></option>
+                                <?php foreach ($this->jemCategories as $category) : ?>
+                                    <?php if ((int) $category->id === 1) { continue; } ?>
+                                    <option value="<?php echo (int) $category->id; ?>" <?php echo (int) $opt['single_catid'] === (int) $category->id ? 'selected' : ''; ?>>
+                                        <?php echo str_repeat('- ', max(0, (int) $category->level - 1)) . $this->escape($category->catname); ?>
+                                    </option>
+                                <?php endforeach; ?>
+                            </select>
+                        </div>
                     </div>
                 </div>
 
@@ -217,17 +246,31 @@ require dirname(__DIR__) . '/navigation.php';
                     <div class="alert alert-warning mt-2 d-none" data-map-dirty><?php echo Text::_('COM_JEMMIGRATOR_MAP_CHANGED'); ?></div>
                 </section>
 
-                <div class="form-check">
-                    <input type="hidden" name="<?php echo $p; ?>create_venues" value="0">
-                    <input class="form-check-input" type="checkbox" name="<?php echo $p; ?>create_venues" id="<?php echo $p; ?>create_venues" value="1" <?php echo !empty($opt['create_venues']) ? 'checked' : ''; ?>>
-                    <label class="form-check-label" for="<?php echo $p; ?>create_venues"><?php echo Text::_('COM_JEMMIGRATOR_CREATE_VENUES'); ?></label>
-                </div>
-                <div class="form-check mb-3">
-                    <input type="hidden" name="<?php echo $p; ?>copy_images" value="0">
-                    <input class="form-check-input" type="checkbox" name="<?php echo $p; ?>copy_images" id="<?php echo $p; ?>copy_images" value="1" <?php echo !empty($opt['copy_images']) ? 'checked' : ''; ?>>
-                    <label class="form-check-label" for="<?php echo $p; ?>copy_images"><?php echo Text::_('COM_JEMMIGRATOR_COPY_IMAGES'); ?></label>
-                    <div class="form-text"><?php echo Text::_('COM_JEMMIGRATOR_COPY_IMAGES_DESC'); ?></div>
-                </div>
+                <fieldset class="mb-3">
+                    <legend class="h6"><?php echo Text::_('COM_JEMMIGRATOR_MEDIA_SCOPE'); ?></legend>
+                    <?php foreach ([
+                        'copy_event_images' => ['event_images', 'COM_JEMMIGRATOR_EVENT_IMAGES'],
+                        'copy_category_images' => ['category_images', 'COM_JEMMIGRATOR_CATEGORY_IMAGES'],
+                        'copy_venue_images' => ['venue_images', 'COM_JEMMIGRATOR_VENUE_IMAGES'],
+                    ] as $field => [$capability, $label]) : ?>
+                        <div class="form-check">
+                            <input type="hidden" name="<?php echo $p . $field; ?>" value="0">
+                            <input class="form-check-input" type="checkbox" name="<?php echo $p . $field; ?>" id="<?php echo $p . $field; ?>" value="1"
+                                <?php echo !empty($media[$capability]) && !empty($opt[$field]) ? 'checked' : ''; ?>
+                                <?php echo !empty($media[$capability]) ? '' : 'disabled'; ?>>
+                            <label class="form-check-label" for="<?php echo $p . $field; ?>"><?php echo Text::_($label); ?></label>
+                            <?php if (empty($media[$capability])) : ?>
+                                <span class="text-body-secondary small"><?php echo Text::_('COM_JEMMIGRATOR_MEDIA_NOT_MAPPED'); ?></span>
+                            <?php endif; ?>
+                        </div>
+                    <?php endforeach; ?>
+                    <p class="form-text mb-1"><?php echo Text::_('COM_JEMMIGRATOR_COPY_IMAGES_DESC'); ?></p>
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" id="<?php echo $p; ?>event_attachments" disabled>
+                        <label class="form-check-label" for="<?php echo $p; ?>event_attachments"><?php echo Text::_('COM_JEMMIGRATOR_EVENT_ATTACHMENTS'); ?></label>
+                        <span class="text-body-secondary small"><?php echo Text::_('COM_JEMMIGRATOR_MEDIA_NOT_MAPPED'); ?></span>
+                    </div>
+                </fieldset>
                 <div class="form-check mb-3">
                     <input type="hidden" name="<?php echo $p; ?>skip_past" value="0">
                     <input class="form-check-input" type="checkbox" name="<?php echo $p; ?>skip_past" id="<?php echo $p; ?>skip_past" value="1" <?php echo !empty($opt['skip_past']) ? 'checked' : ''; ?>>

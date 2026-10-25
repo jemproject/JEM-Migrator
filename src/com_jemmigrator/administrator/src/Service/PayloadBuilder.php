@@ -40,7 +40,9 @@ final class PayloadBuilder
     public function build(AbstractAdapter $adapter, array $options): array
     {
         $adapter->setOptions(['calendars' => $options['calendars'] ?? []]);
-        $occurrences = $adapter->loadOccurrences();
+        $migrateEvents = !array_key_exists('migrate_events', $options) || !empty($options['migrate_events']);
+        $migrateCategories = !array_key_exists('migrate_categories', $options) || !empty($options['migrate_categories']);
+        $occurrences = $migrateEvents ? $adapter->loadOccurrences() : [];
 
         if (\count($occurrences) > self::MAX_OCCURRENCES) {
             throw new \RuntimeException(Text::sprintf('COM_JEMMIGRATOR_ERROR_TOO_MANY', \count($occurrences), self::MAX_OCCURRENCES));
@@ -105,8 +107,9 @@ final class PayloadBuilder
             ];
         }
 
-        $categories = ($options['category_mode'] ?? 'tree') !== 'single'
-            ? $this->categories($adapter->loadCategories(), $events, ($options['category_mode'] ?? 'tree') === 'manual')
+        $categories = $migrateCategories && ($options['category_mode'] ?? 'tree') !== 'single'
+            ? $this->categories($adapter->loadCategories(), $events,
+                ($options['category_mode'] ?? 'tree') === 'manual' || !$migrateEvents)
             : [];
 
         return ['categories' => $categories, 'events' => $events, 'skipped' => $skipped, 'counts' => $counts];
@@ -172,6 +175,7 @@ final class PayloadBuilder
             'longitude'   => $venue['longitude'] ?? null,
             'url'         => (string) ($venue['url'] ?? ''),
             'image'       => (string) ($venue['image'] ?? ''),
+            'access'      => (int) ($venue['access'] ?? 1),
         ];
     }
 

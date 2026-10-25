@@ -26,7 +26,8 @@ $categoryModes = [
 ];
 $pluginReady = $this->importInfo !== null && !empty($this->importInfo['compatible']) && !empty($this->importInfo['ready']);
 $preflightReady = $tab && $tab['available'] && $this->sourceError === '' && $this->jem['installed'] && $pluginReady
-    && $preview && (int) ($counts['events'] ?? 0) > 0 && (int) ($counts['errors'] ?? 0) === 0;
+    && $preview && ((int) ($counts['events'] ?? 0) > 0 || (int) ($counts['categories_new'] ?? 0) > 0)
+    && (int) ($counts['errors'] ?? 0) === 0;
 ?>
 <?php
 $tabs = $this->tabs;
@@ -71,6 +72,8 @@ require dirname(__DIR__) . '/navigation.php';
                     </a>
                 <?php elseif ($tab && !$tab['plugin_enabled']) : ?>
                     <span class="text-body-secondary"><?php echo Text::_('COM_JEMMIGRATOR_ASK_ADMIN_ADAPTER'); ?></span>
+                <?php elseif ($tab && $tab['detected'] && $tab['schema_compatible'] === false) : ?>
+                    <span class="text-danger"><?php echo Text::_('COM_JEMMIGRATOR_SOURCE_SCHEMA_INCOMPATIBLE'); ?></span>
                 <?php elseif ($tab && $tab['detected'] && !$tab['available']) : ?>
                     <span class="text-danger"><?php echo Text::_('COM_JEMMIGRATOR_ADAPTER_UNAVAILABLE'); ?></span>
                 <?php endif; ?>
@@ -107,7 +110,9 @@ require dirname(__DIR__) . '/navigation.php';
             </p>
             <p class="mb-2">
                 <strong><?php echo Text::_('COM_JEMMIGRATOR_CREATE_VENUES'); ?>:</strong> <?php echo Text::_(!empty($options['create_venues']) ? 'JYES' : 'JNO'); ?> ·
-                <strong><?php echo Text::_('COM_JEMMIGRATOR_COPY_IMAGES'); ?>:</strong> <?php echo Text::_(!empty($options['copy_images']) ? 'JYES' : 'JNO'); ?> ·
+                <strong><?php echo Text::_('COM_JEMMIGRATOR_EVENT_IMAGES'); ?>:</strong> <?php echo Text::_(!empty($options['copy_event_images']) ? 'JYES' : 'JNO'); ?> ·
+                <strong><?php echo Text::_('COM_JEMMIGRATOR_CATEGORY_IMAGES'); ?>:</strong> <?php echo Text::_(!empty($options['copy_category_images']) ? 'JYES' : 'JNO'); ?> ·
+                <strong><?php echo Text::_('COM_JEMMIGRATOR_VENUE_IMAGES'); ?>:</strong> <?php echo Text::_(!empty($options['copy_venue_images']) ? 'JYES' : 'JNO'); ?> ·
                 <strong><?php echo Text::_('COM_JEMMIGRATOR_SKIP_PAST'); ?>:</strong> <?php echo Text::_(!empty($options['skip_past']) ? 'JYES' : 'JNO'); ?>
             </p>
             <p class="mb-2"><?php echo Text::sprintf('COM_JEMMIGRATOR_PLAN_CHECKS',
@@ -118,6 +123,7 @@ require dirname(__DIR__) . '/navigation.php';
             <div class="alert <?php echo $preflightReady ? 'alert-success' : 'alert-danger'; ?>">
                 <?php echo Text::_($preflightReady ? 'COM_JEMMIGRATOR_PREFLIGHT_PASSED' : 'COM_JEMMIGRATOR_PREFLIGHT_FAILED'); ?>
             </div>
+            <p class="text-warning-emphasis small mb-0"><?php echo Text::_('COM_JEMMIGRATOR_ACL_SCOPE_NOTICE'); ?></p>
         <?php else : ?>
             <p class="mb-2"><?php echo Text::_('COM_JEMMIGRATOR_PLAN_NOT_READY'); ?></p>
         <?php endif; ?>

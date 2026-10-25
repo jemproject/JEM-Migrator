@@ -55,6 +55,7 @@ final class BatchNormaliser
 
         $options = \is_array($batch['options'] ?? null) ? $batch['options'] : [];
         $categoryMode = (string) ($options['category_mode'] ?? 'tree');
+        $copyImages = $version >= 2 && !empty($options['copy_images']);
         $categoryMap = [];
 
         if ($categoryMode === 'manual') {
@@ -91,7 +92,10 @@ final class BatchNormaliser
                 'single_catid'  => max(0, (int) ($options['single_catid'] ?? 0)),
                 'category_map'  => $categoryMap,
                 'create_venues' => !empty($options['create_venues']) ? 1 : 0,
-                'copy_images'   => $version >= 2 && !empty($options['copy_images']) ? 1 : 0,
+                'copy_images'   => $copyImages ? 1 : 0,
+                'copy_event_images' => $version >= 2 && !empty($options['copy_event_images'] ?? $copyImages) ? 1 : 0,
+                'copy_category_images' => $version >= 2 && !empty($options['copy_category_images'] ?? $copyImages) ? 1 : 0,
+                'copy_venue_images' => $version >= 2 && !empty($options['copy_venue_images'] ?? $copyImages) ? 1 : 0,
             ],
             'categories' => array_values(array_map(static function (array $category) use ($version): array {
                 return self::category($category, $version);
@@ -212,6 +216,7 @@ final class BatchNormaliser
             'longitude'   => self::coordinate($v['longitude'] ?? null, 180),
             'url'         => self::text($v['url'] ?? '', 200),
             'image'       => $version >= 2 ? self::text($v['image'] ?? '', 2048) : '',
+            'access'      => max(1, (int) ($v['access'] ?? 1)),
         ];
 
         return $venue['name'] !== '' ? $venue : null;

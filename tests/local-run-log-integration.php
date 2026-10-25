@@ -41,6 +41,7 @@ foreach ([
 require_once dirname(__DIR__) . '/src/plg_jem_import/src/Service/BatchNormaliser.php';
 require_once dirname(__DIR__) . '/src/plg_jem_import/src/Service/LocalImageSource.php';
 require_once dirname(__DIR__) . '/src/plg_jem_import/src/Service/ImageTransfer.php';
+require_once dirname(__DIR__) . '/src/plg_jem_import/src/Service/VenueIdentity.php';
 require_once dirname(__DIR__) . '/src/plg_jem_import/src/Service/ImportService.php';
 require_once dirname(__DIR__) . '/src/plg_jem_import/src/Service/BatchFailure.php';
 

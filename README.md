@@ -2,7 +2,9 @@
 
 Migrate events, categories and venues from other Joomla event components into [JEM](https://www.joomlaeventmanager.net).
 
-> **Status: prototype (0.1.3).** Based on the working example in [JEM issue #2371](https://github.com/jemproject/JEM-Project/issues/2371). Installation has been checked on a local Joomla 6 site, but source migrations are not yet fully verified against real source components in this repository. Use it only on a copy of your site.
+> **Status: prototype (0.1.3).** Based on the working example in [JEM issue #2371](https://github.com/jemproject/JEM-Project/issues/2371). A controlled JEvents 3.7.0 fixture was migrated on local Joomla 6, but production data, other source components, the installed-package UI route and image-bearing source records still need pilots. Use it only on a copy of your site.
+
+> **Development note:** the checked-in `dist/` ZIPs are still version 0.1.3. Source-tree improvements described below are not in those archives until a new package is built and installed.
 
 ## How it works
 
@@ -55,13 +57,13 @@ This is a prototype. Test only on a staging copy with a restorable backup of bot
 4. Only on the staging copy, start the migration from **Import runs**. Check the console, the imported JEM records and any skipped or warning rows. Keep the backup even if Undo is available.
 5. Report the Joomla, JEM, source-component and Migrator versions, the selected options, the expected and actual counts, and the exact error or console message. Remove personal data from any shared logs or examples.
 
-Without Joomla, run `php tests/smoke.php` for the focused checks. The local integration scripts under `tests/` require a configured local Joomla installation and must not be run on a production site.
+Without Joomla, run `php tests/smoke.php` for the focused checks. On a local Joomla staging copy, `php tests/local-source-schema.php <site-root>` checks required source tables and columns without writing data. After a migration, `php tests/local-run-audit.php <site-root> <run-id>` checks its ledger, JEM rows and category links without changing them. The other local integration scripts under `tests/` require a configured local Joomla installation and must not be run on a production site.
 
 ## Compatibility
 
 | Source | Adapter basis | Verified in this repository | Notes |
 |---|---|---|---|
-| JEvents | Local installation: 3.7.0 | Detection and category mapping read-only checks run; the current sample event has a conflicting primary/category-map value, so a full migration was not run | Locations add-on untested |
+| JEvents | Local installation: 3.7.0 | Four local fixture events and two new JEM categories imported after correcting one inconsistent source category map; run ledger, fields, publication, category links and repeat-preview checked | Locations add-on, event images, attachments and real-world sites untested or unsupported |
 | DPCalendar Lite | Original example: 10.12.3 | Adapter schema and migration not verified locally | Paid edition, recurrence and bookings untested |
 | iCagenda | Original example: 4.0.16 | Adapter schema and migration not verified locally | Registrations/custom fields not imported |
 
@@ -74,13 +76,21 @@ Other components, including EventList and paid products, are not included in thi
 | Every date (repetition, instance, single date) | One JEM event |
 | Dates of one repeating event | A custom series (`#__jem_event_series`) |
 | Categories | Automatic tree: categories with events and their parents. Manual map: all source categories, each optionally connected to an existing JEM category; unconnected children inherit their resolved parent and are created in JEM. Single mode: all events in one JEM category. |
-| Location | Venue, reused when a venue with the same name exists; country converted to the ISO code JEM stores |
+| Location | Venue; an existing same-name venue is reused only when its location fields match. Distinct addresses can become separate venues, while an ambiguous match blocks migration. Country is converted to the ISO code JEM stores. |
 | Published / unpublished / archived, access level, author, created date | Kept (author only when the user exists) |
-| Local image files in Joomla `images/` or `media/` | Optionally copied and normalised with JEM's image profiles into its configured event, category and venue folders; reused JEM records keep their images |
+| Local image files in Joomla `images/` or `media/` | Separately selectable for events, categories and venues when the source adapter exposes them. They are copied and normalised with JEM's image profiles into its configured folders; reused JEM records keep their images. |
 
-Image URLs, including same-site URLs, are never downloaded, copied or assigned. An item with only an image URL has no imported image. JEvents add-on images and other unverified adapter-specific image fields remain unsupported. Not imported: bookings, registrations, tickets, prices, custom fields, contact data and attached files.
+JEM resolves an event image's custom subfolder after destination categories have been mapped: `{category_alias}` means the first assigned **JEM** category, not the original source category. Category and venue images use their own JEM folder patterns. These patterns select subfolders within JEM's event/category/venue image bases, not arbitrary external paths. Imported images use each active profile's crop/pad ratio and JEM's global maximum image dimension; the per-upload default resolution shown in editing forms is not currently an import target. A local copy test verified all three image profiles, but it did not verify adapter-specific image discovery in an end-to-end import.
+
+Image URLs, including same-site URLs, are never downloaded, copied or assigned. An item with only an image URL has no imported image. The JEvents adapter currently exposes category images but not event or venue image fields. Event attachments are **not yet migrated**: JEM has attachment records, but none of the current source adapters has a verified event-attachment mapping. The UI shows this capability as unavailable rather than silently dropping files. Not imported: bookings, registrations, tickets, prices, custom fields and contact data.
+
+The source-tree UI now offers event and category scope independently, with venues linked to selected events. Category-only imports can create the source category tree. Events without category creation require one existing JEM category. Standalone venue import needs a source adapter and payload format that expose source venue records; it is not implemented yet.
+
+Joomla viewing access-level IDs are carried with event and category records, and with venues when the adapter exposes a venue access level. A same-name venue with incompatible access is not reused. This does **not** yet copy or prove parity of action-level ACL rules between source and JEM; source component and JEM component inheritance may differ. Do not assume action permissions survived migration without a separate ACL comparison.
 
 In manual category mode, select a source category in the left tree and click an existing category in the right JEM tree to connect them. A source parent connected to an existing JEM category is **reused**, not copied; its unconnected descendants are proposed as new categories below it. A child can have its own connection, overriding that inheritance. The diagram shows proposed new categories in green with dashed lines and existing JEM categories in blue with solid lines. Press **Preview** after changes to validate both category assignments and each event's destination before importing.
+
+The source preflight also checks the columns required by its adapter. This guards against unsupported table shapes; it does not by itself prove that a source version has been fully tested. If a same-name venue has incomplete or conflicting location data, review it in the source and JEM before starting the import. The Migrator never guesses which place was intended.
 
 The JEvents adapter also blocks a preview if an event's primary category disagrees with its JEvents category-map table. Correct the source event in JEvents first; the Migrator does not rewrite source data or guess which category is right.
 
@@ -115,7 +125,7 @@ The JEM import plugin listens to six events. Each sets the event argument `resul
 | `run_id` | int | `0` starts a new run; the id returned by the first batch continues it |
 | `dry_run` | bool | Validate and plan only; nothing is written |
 | `last_batch` | bool | Marks the run as finished |
-| `options` | object | `category_mode` (`tree`/`manual`/`single`), `parent_catid`, `single_catid`, `category_map` (source category ref to existing JEM category ID, manual mode only), `create_venues`, `copy_images` |
+| `options` | object | `category_mode` (`tree`/`manual`/`single`), `parent_catid`, `single_catid`, `category_map` (source category ref to existing JEM category ID, manual mode only), `create_venues`, `copy_event_images`, `copy_category_images`, `copy_venue_images`; the older `copy_images` still enables all three when individual choices are absent |
 | `categories` | list | Parents before children; send them with the first batch |
 | `events` | list | At most 500 per batch |
 

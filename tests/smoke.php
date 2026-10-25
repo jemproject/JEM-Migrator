@@ -14,6 +14,8 @@ namespace Joomla\Database {
     class FakeDb implements DatabaseInterface {
         public $executed = [];
         public $result = [];
+        public $tables = [];
+        public $columns = [];
         function setQuery($q, $o = 0, $l = 0) { $this->executed[] = (string) $q; return $this; }
         function loadResult() { return 1; }
         function loadObjectList($k = '') { return $this->result; }
@@ -21,7 +23,8 @@ namespace Joomla\Database {
         function quoteName($n, $as = null) { return is_array($n) ? $n : "`$n`"; }
         function quote($t, $e = true) { return "'$t'"; }
         function getPrefix() { return 'jos_'; }
-        function getTableList() { return []; }
+        function getTableList() { return $this->tables; }
+        function getTableColumns($table, $typeOnly = true) { return $this->columns[$table] ?? []; }
     }
     class FakeQuery implements QueryInterface { function __toString() { return "\nSELECT 1"; } }
 }
@@ -37,6 +40,7 @@ namespace {
     require $src . '/plg_jem_import/src/Service/BatchNormaliser.php';
     require $src . '/plg_jem_import/src/Service/BatchFailure.php';
     require $src . '/plg_jem_import/src/Service/LocalImageSource.php';
+    require $src . '/plg_jem_import/src/Service/VenueIdentity.php';
     require $src . '/com_jemmigrator/administrator/src/Adapter/ReadOnlyDatabase.php';
     require $src . '/com_jemmigrator/administrator/src/Adapter/AbstractAdapter.php';
     require $src . '/com_jemmigrator/administrator/src/Service/PayloadBuilder.php';
@@ -44,6 +48,7 @@ namespace {
     use Joomla\Plugin\Jem\Import\Service\BatchNormaliser;
     use Joomla\Plugin\Jem\Import\Service\BatchFailure;
     use Joomla\Plugin\Jem\Import\Service\LocalImageSource;
+    use Joomla\Plugin\Jem\Import\Service\VenueIdentity;
     use JemProject\Component\JemMigrator\Administrator\Adapter\ReadOnlyDatabase;
     use JemProject\Component\JemMigrator\Administrator\Adapter\AbstractAdapter;
     use JemProject\Component\JemMigrator\Administrator\Service\PayloadBuilder;
@@ -89,6 +94,11 @@ namespace {
         && $imageBatch['events'][0]['image_intro'] === 'https://example.org/event.jpg'
         && $imageBatch['events'][0]['image_full'] === 'images/event.jpg'
         && $imageBatch['events'][0]['venue']['image'] === 'media/hall.jpg');
+    $separateImages = BatchNormaliser::normalise(['format_version' => 2, 'source' => 'jevents',
+        'options' => ['copy_event_images' => 0, 'copy_category_images' => 1, 'copy_venue_images' => 0]]);
+    check('image choices are separate by object', $separateImages['options']['copy_event_images'] === 0
+        && $separateImages['options']['copy_category_images'] === 1
+        && $separateImages['options']['copy_venue_images'] === 0);
 
     $manual = BatchNormaliser::normalise(['format_version' => 2, 'source' => 'jevents',
         'options' => ['category_mode' => 'manual', 'parent_catid' => 1, 'category_map' => ['58' => 10, '61' => 8]],
@@ -143,6 +153,92 @@ namespace {
     try { $ro->setQuery($ro->getQuery(true))->loadResult(); check('allows query object starting with newline', true); } catch (RuntimeException $e) { check('allows query object starting with newline', false); }
     check('no execute() method', !method_exists($ro, 'execute') && !method_exists($ro, 'insertObject'));
 
+    $schemaDb = new \Joomla\Database\FakeDb();
+    $schemaDb->tables = ['jos_source'];
+    $schemaDb->columns = ['jos_source' => ['id' => 'int', 'start_date' => 'datetime']];
+    $schemaAdapter = new class($schemaDb) extends AbstractAdapter {
+        public function getSource(): string
+        {
+            return 'schema';
+        }
+
+        public function getLabel(): string
+        {
+            return 'Schema';
+        }
+
+        public function getElement(): string
+        {
+            return 'com_schema';
+        }
+
+        public function isAvailable(): bool
+        {
+            return $this->tableHasColumns('source', ['id', 'start_date'])
+                && $this->optionalTableHasColumns('extras', ['value']);
+        }
+
+        public function getSummary(): array
+        {
+            return [];
+        }
+
+        public function loadCategories(): array
+        {
+            return [];
+        }
+
+        public function loadOccurrences(): array
+        {
+            return [];
+        }
+    };
+    check('source schema with required columns is available', $schemaAdapter->isAvailable());
+    unset($schemaDb->columns['jos_source']['start_date']);
+    check('source schema missing a required column is blocked', !$schemaAdapter->isAvailable());
+    $schemaDb->columns['jos_source']['start_date'] = 'datetime';
+    $schemaDb->tables[] = 'jos_extras';
+    check('optional source table with missing columns is blocked', !$schemaAdapter->isAvailable());
+
+    $venueA = ['venue' => 'Community Centre', 'city' => 'Madrid', 'street' => 'Main St 1'];
+    $venueB = ['venue' => 'Community Centre', 'city' => 'Madrid', 'street' => 'Main St 2'];
+    check('venue identity separates same-name addresses', VenueIdentity::key($venueA) !== VenueIdentity::key($venueB));
+    check('venue identity ignores case and extra spaces', VenueIdentity::key($venueA) === VenueIdentity::key([
+        'venue' => ' community centre ', 'city' => 'MADRID', 'street' => 'Main  St 1',
+    ]));
+    check('venue identity includes Joomla access level', VenueIdentity::key($venueA + ['access' => 1])
+        !== VenueIdentity::key($venueA + ['access' => 2]));
+    check('exact venue identity reuses the existing venue', VenueIdentity::resolve($venueA, [['id' => 7] + $venueA]) === 7);
+    check('exact venue wins over a less complete same-name candidate', VenueIdentity::resolve($venueA, [
+        ['id' => 7] + $venueA, ['id' => 8, 'venue' => 'Community Centre'],
+    ]) === 7);
+    check('exact venue wins over a different-access candidate', VenueIdentity::resolve($venueA, [
+        ['id' => 8, 'access' => 2] + $venueA, ['id' => 7, 'access' => 1] + $venueA,
+    ]) === 7);
+    check('distinct same-name address creates a separate venue', VenueIdentity::resolve($venueB, [['id' => 7] + $venueA]) === 0);
+    check('unique name-only venue can be reused', VenueIdentity::resolve(['venue' => 'Studio'], [
+        ['id' => 9, 'venue' => 'Studio'],
+    ]) === 9);
+    try {
+        VenueIdentity::resolve($venueA + ['access' => 2], [['id' => 7, 'access' => 1] + $venueA]);
+        check('venue with different access is not reused', false);
+    } catch (RuntimeException $e) {
+        check('venue with different access is not reused', true);
+    }
+    try {
+        VenueIdentity::resolve(['venue' => 'Community Centre'], [['id' => 7] + $venueA]);
+        check('incomplete venue identity blocks ambiguous reuse', false);
+    } catch (RuntimeException $e) {
+        check('incomplete venue identity blocks ambiguous reuse', true);
+    }
+
+    try {
+        VenueIdentity::resolve($venueA, [['id' => 7] + $venueA, ['id' => 8] + $venueA]);
+        check('duplicate exact venues are blocked', false);
+    } catch (RuntimeException $e) {
+        check('duplicate exact venues are blocked', true);
+    }
+
     // 5. PayloadBuilder: series, skipped rows, used categories.
     $adapter = new class(new \Joomla\Database\FakeDb()) extends AbstractAdapter {
         function getSource(): string { return 'fake'; }
@@ -178,6 +274,16 @@ namespace {
     check('single mode sends no categories', $p2['categories'] === [] && count($p2['events']) === 4);
     $p3 = (new PayloadBuilder())->build($adapter, ['category_mode' => 'manual', 'skip_past' => 0]);
     check('manual mode includes unused source categories', array_column($p3['categories'], 'ref') === ['1', '2', '3']);
+    $categoriesOnly = (new PayloadBuilder())->build($adapter, [
+        'category_mode' => 'tree', 'migrate_events' => 0, 'migrate_categories' => 1,
+    ]);
+    check('category-only scope includes complete source tree', $categoriesOnly['events'] === []
+        && array_column($categoriesOnly['categories'], 'ref') === ['1', '2', '3']);
+    $eventsOnly = (new PayloadBuilder())->build($adapter, [
+        'category_mode' => 'single', 'migrate_events' => 1, 'migrate_categories' => 0,
+    ]);
+    check('events-only scope does not create categories', count($eventsOnly['events']) === 4
+        && $eventsOnly['categories'] === []);
     check('venue converted to format keys', $p2['events'][0]['venue']['name'] === 'Studio 3' && $p2['events'][0]['venue']['postal_code'] === '1234');
     check('payload fingerprint is stable', PayloadBuilder::fingerprint($p) === PayloadBuilder::fingerprint($p));
     $changedPayload = $p;

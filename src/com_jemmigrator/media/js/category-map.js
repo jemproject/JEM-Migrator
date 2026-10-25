@@ -35,6 +35,8 @@
         const dirtyAlert = board.querySelector('[data-map-dirty]');
         const importButton = card.querySelector('[data-map-import-button]');
         const parentSelect = form.querySelector('[name$="parent_catid"]');
+        const parentSetting = form.querySelector('[data-map-parent-setting]');
+        const singleSetting = form.querySelector('[data-map-single-setting]');
         const modeInputs = form.querySelectorAll('[name$="category_mode"]');
         const source = parse(board.dataset.sourceTree, []);
         const targets = parse(board.dataset.targetTree, []);
@@ -167,6 +169,8 @@
         };
 
         const render = () => {
+            parentSetting.hidden = mode() === 'single';
+            singleSetting.hidden = mode() !== 'single';
             board.hidden = mode() !== 'manual';
 
             if (board.hidden) {
