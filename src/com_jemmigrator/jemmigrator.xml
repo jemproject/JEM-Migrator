@@ -7,7 +7,7 @@
     <license>https://www.gnu.org/licenses/gpl-3.0 GNU/GPL</license>
     <authorEmail>info@joomlaeventmanager.net</authorEmail>
     <authorUrl>https://www.joomlaeventmanager.net</authorUrl>
-    <version>0.1.3</version>
+    <version>0.1.4</version>
     <description>COM_JEMMIGRATOR_XML_DESCRIPTION</description>
     <namespace path="src">JemProject\Component\JemMigrator</namespace>
 

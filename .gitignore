@@ -43,10 +43,12 @@ desktop.ini
 ## JEM Migrator
 #################
 
-# Keep only the current installable packages in Git; update this allowlist for each release.
+# Keep released installable packages in Git; update this allowlist for each release.
 /dist/*
 !/dist/pkg_jemmigrator_v0.1.3.zip
 !/dist/plg_jem_import_v0.1.3.zip
+!/dist/pkg_jemmigrator_v0.1.4.zip
+!/dist/plg_jem_import_v0.1.4.zip
 
 # Local documentation, review notes, drafts and the original patch.
 /docs/

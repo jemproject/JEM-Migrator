@@ -10,7 +10,7 @@
     <authorUrl>https://www.joomlaeventmanager.net</authorUrl>
     <packager>JEM Community</packager>
     <packagerurl>https://www.joomlaeventmanager.net</packagerurl>
-    <version>0.1.3</version>
+    <version>0.1.4</version>
     <description>PKG_JEMMIGRATOR_XML_DESCRIPTION</description>
     <scriptfile>script.php</scriptfile>
 

@@ -2,9 +2,9 @@
 
 Migrate events, categories and venues from other Joomla event components into [JEM](https://www.joomlaeventmanager.net).
 
-> **Status: prototype (0.1.3).** Based on the working example in [JEM issue #2371](https://github.com/jemproject/JEM-Project/issues/2371). A controlled JEvents 3.7.0 fixture was migrated on local Joomla 6, but production data, other source components, the installed-package UI route and image-bearing source records still need pilots. Use it only on a copy of your site.
+> **Status: prototype (0.1.4).** Based on the working example in [JEM issue #2371](https://github.com/jemproject/JEM-Project/issues/2371). A controlled JEvents 3.7.0 fixture was migrated on local Joomla 6, but production data, other source components, the installed-package UI route and image-bearing source records still need pilots. Use it only on a copy of your site.
 
-> **Development note:** the checked-in `dist/` ZIPs are still version 0.1.3. Source-tree improvements described below are not in those archives until a new package is built and installed.
+> **Development note:** version 0.1.4 packages the source-tree improvements for further testing of [issue #1](https://github.com/jemproject/JEM-Migrator/issues/1). It does not imply that every reported migration scenario is resolved.
 
 ## How it works
 
@@ -32,8 +32,8 @@ The bundled adapters use a read-only database facade that accepts `SELECT`, `SHO
 
 ## Installation
 
-1. Install `plg_jem_import_v0.1.3.zip` (the JEM import plugin). It is enabled on install.
-2. Install `pkg_jemmigrator_v0.1.3.zip` (JEM Migrator and the adapters). The adapters are enabled on install.
+1. Install `plg_jem_import_v0.1.4.zip` (the JEM import plugin). It is enabled on install.
+2. Install `pkg_jemmigrator_v0.1.4.zip` (JEM Migrator and the adapters). The adapters are enabled on install.
 3. Open **Components → JEM Migrator**.
 
 The user needs `core.manage` on JEM Migrator and the JEM permission **Manage tools** (`jem.tools.manage`), the same permission as the JEM import page.
